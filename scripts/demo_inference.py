@@ -19,6 +19,8 @@ from alphapose.utils.vis import getTime
 from alphapose.utils.webcam_detector import WebCamDetectionLoader
 from alphapose.utils.writer import DataWriter
 
+from ToVideoPose3D.utils import generate_kpts
+
 """----------------------------- Demo options -----------------------------"""
 parser = argparse.ArgumentParser(description='AlphaPose Demo')
 parser.add_argument('--cfg', type=str, required=True,
@@ -262,3 +264,6 @@ if __name__ == "__main__":
     final_result = writer.results()
     write_json(final_result, args.outputpath, form=args.format, for_eval=args.eval)
     print("Results have been written to json.")
+    #output npz for VideoPose3D
+    generate_kpts(final_result, args, "VideoPose_test")
+

@@ -47,7 +47,7 @@ def generate_kpts(final_result, args, video_name):
 		'w': 1920,
 		'h': 1080,
 	}
-
+	dataset_name = "alphapose"
 	metadata = {}
 	metadata['layout_name'] = 'coco'
 	metadata['num_joints'] = 17
@@ -55,7 +55,6 @@ def generate_kpts(final_result, args, video_name):
 	metadata['video_metadata'] = {dataset_name: resolution}
 
 	output = {}
-	dataset_name = "alphapose"
 	output[dataset_name] = {}
 	output[dataset_name]['custom'] = kpts
 	print('kpts npz save in ', name)

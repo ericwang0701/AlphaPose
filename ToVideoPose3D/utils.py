@@ -15,8 +15,52 @@ def add_path():
     #sys.path.extend(paths)
 
 
+def encode_for_videpose3d(boxes,keypoints,resolution, dataset_name):
+	# Generate metadata:
+	metadata = {}
+	metadata['layout_name'] = 'coco'
+	metadata['num_joints'] = 17
+	metadata['keypoints_symmetry'] = [[1, 3, 5, 7, 9, 11, 13, 15], [2, 4, 6, 8, 10, 12, 14, 16]]
+	metadata['video_metadata'] = {dataset_name: resolution}
+
+	prepared_boxes = []
+	prepared_keypoints = []
+	for i in range(len(boxes)):
+		if len(boxes[i]) == 0 or len(keypoints[i]) == 0:
+			# No bbox/keypoints detected for this frame -> will be interpolated
+			prepared_boxes.append(np.full(4, np.nan, dtype=np.float32)) # 4 bounding box coordinates
+			prepared_keypoints.append(np.full((17, 4), np.nan, dtype=np.float32)) # 17 COCO keypoints
+			continue
+
+		prepared_boxes.append(boxes[i])
+		prepared_keypoints.append(keypoints[i][:,:2])
+		
+	boxes = np.array(prepared_boxes, dtype=np.float32)
+	keypoints = np.array(prepared_keypoints, dtype=np.float32)
+	keypoints = keypoints[:, :, :2] # Extract (x, y)
+	
+	# Fix missing bboxes/keypoints by linear interpolation
+	mask = ~np.isnan(boxes[:, 0])
+	indices = np.arange(len(boxes))
+	for i in range(4):
+		boxes[:, i] = np.interp(indices, indices[mask], boxes[mask, i])
+	for i in range(17):
+		for j in range(2):
+			keypoints[:, i, j] = np.interp(indices, indices[mask], keypoints[mask, i, j])
+	
+	print('{} total frames processed'.format(len(boxes)))
+	print('{} frames were interpolated'.format(np.sum(~mask)))
+	print('----------')
+	
+	return [{
+		'start_frame': 0, # Inclusive
+		'end_frame': len(keypoints), # Exclusive
+		'bounding_boxes': boxes,
+		'keypoints': keypoints,
+	}], metadata
+
 #call the fuction after getting the result from alphapose
-def generate_kpts(final_result, arg, video_name):
+def generate_kpts(final_result, args, video_name):
     kpts = []
     no_person = []
     for i in range(len(final_result)):
@@ -40,8 +84,30 @@ def generate_kpts(final_result, arg, video_name):
 
     name = f'{args.outputpath}/{video_name}.npz'
     kpts = np.array(kpts).astype(np.float32)
-    print('kpts npz save in ', name)
-    np.savez_compressed(name, kpts=kpts)
+    #print('kpts npz save in ', name)
+    #np.savez_compressed(name, kpts=kpts)
+
+    # Generate metadata: TODO detect it from video
+    resolution = {
+				'w': 1920,
+				'h': 1080,
+			}
+
+
+	metadata = {}
+	metadata['layout_name'] = 'coco'
+	metadata['num_joints'] = 17
+	metadata['keypoints_symmetry'] = [[1, 3, 5, 7, 9, 11, 13, 15], [2, 4, 6, 8, 10, 12, 14, 16]]
+	metadata['video_metadata'] = {dataset_name: resolution}
+
+	output = {}
+	dataset_name = "alphapose"
+	output[dataset_name] = {}
+	output[dataset_name]['custom'] = kpts]
+	print('kpts npz save in ', name)
+	np.savez_compressed(name, positions_2d=output, metadata=metadata)
+
+    
 
     return kpts
 

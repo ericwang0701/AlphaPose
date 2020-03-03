@@ -265,5 +265,6 @@ if __name__ == "__main__":
     write_json(final_result, args.outputpath, form=args.format, for_eval=args.eval)
     print("Results have been written to json.")
     #output npz for VideoPose3D
-    generate_kpts(final_result, args, "VideoPose_test")
+    #generate_kpts(final_result, args, "VideoPose_test")
+    generate_kpts_multi(final_result, args, "VideoPose_test")
 

@@ -64,6 +64,47 @@ def generate_kpts(final_result, args, video_name):
 
     return kpts
 
+#TODO: support more than 2 ppl
+def generate_kpts_multi(final_result, args, video_name):
+    kpts = []
+    kpts2 = []
+    no_person = []
+
+
+    for i in range(len(final_result)):
+        if not final_result[i]['result']:  # No people
+            no_person.append(i)
+            kpts.append(None)
+            continue
+
+        #TODO: support multi-person via checking 'idx'
+        if final_result[i]['result']['idx'] == 0:
+            kpt = final_result[i]['result']['keypoints']
+        else final_result[i]['result']['idx'] == 1:
+            kpt2 = final_result[i]['result']['keypoints']
+        
+
+        kpts.append(kpt.data.numpy())
+        kpts2.append(kpt2.data.numpy())
+
+        for n in no_person:
+            kpts[n] = kpts[-1]
+            kpts2[n] = kpts2[-1]
+        no_person.clear()
+
+    for n in no_person:
+        kpts[n] = kpts[-1] if kpts[-1] else kpts[n-1]
+        kpts2[n] = kpts2[-1] if kpts2[-1] else kpts2[n-1]
+
+    name = f'{args.outputpath}/{video_name}.npz'
+    name2 = f'{args.outputpath}/{video_name}_2.npz'
+    kpts = np.array(kpts).astype(np.float32)
+    kpts2 = np.array(kpts2).astype(np.float32)
+    print('kpts npz save in ', name)
+    np.savez_compressed(name, kpts=kpts)
+    np.savez_compressed(name2, kpts=kpts2)
+    return kpts
+
 
 def calculate_area(data):
     """
